@@ -2396,12 +2396,14 @@ function Astral:MakeWindow(config)
 		TabPage.Visible = false
 		TabPage.Parent = ContentContainer
 		-- 横向 sub-tab 栏，首次调用 MakeSubTab 时才显示
+		local SubTabBarHeight = IsMobile and 46 or 56
+		local SubTabBtnHeight = IsMobile and 30 or 36
 		local SubTabBar = Instance.new("Frame")
 		SubTabBar.Name = "SubTabBar"
 		SubTabBar.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
 		SubTabBar.BackgroundTransparency = 0
 		SubTabBar.BorderSizePixel = 0
-		SubTabBar.Size = UDim2.new(1, 0, 0, 40)
+		SubTabBar.Size = UDim2.new(1, 0, 0, SubTabBarHeight)
 		SubTabBar.Position = UDim2.new(0, 0, 0, 0)
 		SubTabBar.ClipsDescendants = true
 		SubTabBar.Visible = false
@@ -2432,12 +2434,12 @@ function Astral:MakeWindow(config)
 		SubTabScrollLayout.FillDirection = Enum.FillDirection.Horizontal
 		SubTabScrollLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		SubTabScrollLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-		SubTabScrollLayout.Padding = UDim.new(0, 4)
+		SubTabScrollLayout.Padding = UDim.new(0, 6)
 		SubTabScrollLayout.Parent = SubTabScroll
 
 		local SubTabScrollPad = Instance.new("UIPadding")
-		SubTabScrollPad.PaddingLeft = UDim.new(0, 8)
-		SubTabScrollPad.PaddingRight = UDim.new(0, 8)
+		SubTabScrollPad.PaddingLeft = UDim.new(0, 12)
+		SubTabScrollPad.PaddingRight = UDim.new(0, 12)
 		SubTabScrollPad.Parent = SubTabScroll
 
 		SubTabScrollLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
@@ -5750,12 +5752,12 @@ function Astral:MakeWindow(config)
 				stName = stCfg
 			end
 
-			-- 首次调用才显示 sub-tab 栏，原 PageScroll 下移 40px 让位
+			-- 首次调用才显示 sub-tab 栏，原 PageScroll 下移让位
 			if not subTabBarShown then
 				subTabBarShown = true
 				SubTabBar.Visible = true
-				PageScroll.Position = UDim2.new(0, 0, 0, 40)
-				PageScroll.Size = UDim2.new(1, 0, 1, -40)
+				PageScroll.Position = UDim2.new(0, 0, 0, SubTabBarHeight)
+				PageScroll.Size = UDim2.new(1, 0, 1, -SubTabBarHeight)
 			end
 
 			local stIdx = #subTabs + 1
@@ -5765,7 +5767,7 @@ function Astral:MakeWindow(config)
 			StBtn.BackgroundColor3 = Color3.fromRGB(26, 26, 32)
 			StBtn.BackgroundTransparency = 1
 			StBtn.BorderSizePixel = 0
-			StBtn.Size = UDim2.new(0, 0, 0, 28)
+			StBtn.Size = UDim2.new(0, 0, 0, SubTabBtnHeight)
 			StBtn.AutomaticSize = Enum.AutomaticSize.X
 			StBtn.AutoButtonColor = false
 			StBtn.Text = ""
@@ -5775,7 +5777,7 @@ function Astral:MakeWindow(config)
 			StBtn.Parent = SubTabScroll
 
 			local StBtnCorner = Instance.new("UICorner")
-			StBtnCorner.CornerRadius = UDim.new(0, 6)
+			StBtnCorner.CornerRadius = UDim.new(0, 8)
 			StBtnCorner.Parent = StBtn
 
 			local StBtnStroke = Instance.new("UIStroke")
@@ -5789,18 +5791,18 @@ function Astral:MakeWindow(config)
 			StBtnLayout.FillDirection = Enum.FillDirection.Horizontal
 			StBtnLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 			StBtnLayout.SortOrder = Enum.SortOrder.LayoutOrder
-			StBtnLayout.Padding = UDim.new(0, 6)
+			StBtnLayout.Padding = UDim.new(0, 8)
 			StBtnLayout.Parent = StBtn
 
 			local StBtnPad = Instance.new("UIPadding")
-			StBtnPad.PaddingLeft = UDim.new(0, 10)
-			StBtnPad.PaddingRight = UDim.new(0, 10)
+			StBtnPad.PaddingLeft = UDim.new(0, 14)
+			StBtnPad.PaddingRight = UDim.new(0, 14)
 			StBtnPad.Parent = StBtn
 
 			if stIcon then
 				local StBtnIco = Instance.new("ImageLabel")
 				StBtnIco.BackgroundTransparency = 1
-				StBtnIco.Size = UDim2.fromOffset(14, 14)
+				StBtnIco.Size = UDim2.fromOffset(IsMobile and 16 or 18, IsMobile and 16 or 18)
 				StBtnIco.LayoutOrder = 1
 				StBtnIco.ZIndex = 8
 				Astral.ApplyIcon(StBtnIco, stIcon)
@@ -5816,9 +5818,10 @@ function Astral:MakeWindow(config)
 			StBtnText.Font = Enum.Font.GothamBold
 			tr(StBtnText, stName)
 			StBtnText.TextColor3 = Color3.fromRGB(160, 160, 168)
-			mTS(StBtnText, 12)
+			mTS(StBtnText, 15)
 			StBtnText.TextXAlignment = Enum.TextXAlignment.Center
 			StBtnText.TextYAlignment = Enum.TextYAlignment.Center
+			StBtnText.TextTruncate = Enum.TextTruncate.None
 			StBtnText.LayoutOrder = 2
 			StBtnText.ZIndex = 8
 			StBtnText.Parent = StBtn
