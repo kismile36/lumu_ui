@@ -2912,7 +2912,7 @@ function Astral:MakeWindow(config)
 			return ButtonController
 		end
 
-		-- AddToggle Implementation (FIXED: Standardized to exactly 60px height)
+		-- AddToggle creates an interactive toggle card.
 		function TabObject:AddToggle(toggleConfig)
 			toggleConfig = toggleConfig or {}
 			local title = toggleConfig.Title or "Toggle"
@@ -2921,7 +2921,13 @@ function Astral:MakeWindow(config)
 			local callback = toggleConfig.Callback or function() end
 			local icon = parseIcon(toggleConfig.Icon)
 			local hasDesc = description and description ~= ""
-			local calculatedHeight = IsMobile and 50 or 64
+			local calculatedHeight = IsMobile and (hasDesc and 72 or 48) or 64
+			local switchTrackWidth = IsMobile and 44 or 68
+			local switchTrackHeight = IsMobile and 26 or 32
+			local switchThumbSize = IsMobile and 20 or 28
+			local switchInset = IsMobile and 2 or 3
+			local switchThumbOffPosition = UDim2.new(0, switchInset, 0.5, -switchThumbSize / 2)
+			local switchThumbOnPosition = UDim2.new(1, -switchThumbSize - switchInset, 0.5, -switchThumbSize / 2)
 			local TargetColumn = GetTargetColumn()
 			local ToggleFrame = Instance.new("TextButton")
 			ToggleFrame.Name = title .. "_Toggle"
@@ -2943,8 +2949,8 @@ function Astral:MakeWindow(config)
 				IconContainer.Name = "IconContainer"
 				IconContainer.BackgroundColor3 = Color3.fromRGB(36, 36, 40)
 				IconContainer.BorderSizePixel = 0
-				IconContainer.Position = UDim2.new(0, 10, 0.5, IsMobile and -16 or -21)
-				IconContainer.Size = UDim2.new(0, IsMobile and 32 or 42, 0, IsMobile and 32 or 42)
+				IconContainer.Position = UDim2.new(0, IsMobile and 8 or 10, 0.5, IsMobile and -13 or -21)
+				IconContainer.Size = UDim2.new(0, IsMobile and 26 or 42, 0, IsMobile and 26 or 42)
 				IconContainer.Parent = ToggleFrame
 				local IconCorner = Instance.new("UICorner")
 				IconCorner.CornerRadius = UDim.new(0, 6)
@@ -2960,7 +2966,7 @@ function Astral:MakeWindow(config)
 				IconLabel.BackgroundTransparency = 1
 				IconLabel.AnchorPoint = Vector2.new(0.5, 0.5)
 				IconLabel.Position = UDim2.new(0.5, 0, 0.5, 0)
-				IconLabel.Size = UDim2.new(0, IsMobile and 20 or 26, 0, IsMobile and 20 or 26)
+				IconLabel.Size = UDim2.new(0, IsMobile and 16 or 26, 0, IsMobile and 16 or 26)
 				Astral.ApplyIcon(IconLabel, icon)
 				IconLabel.ImageColor3 = Color3.fromRGB(255, 255, 255)
 				IconLabel.ScaleType = Enum.ScaleType.Fit
@@ -2969,8 +2975,8 @@ function Astral:MakeWindow(config)
 			local TextContainer = Instance.new("Frame")
 			TextContainer.Name = "TextContainer"
 			TextContainer.BackgroundTransparency = 1
-			TextContainer.Position = icon and UDim2.new(0, 62, 0, 0) or UDim2.new(0, 14, 0, 0)
-			TextContainer.Size = icon and UDim2.new(1, -146, 1, 0) or UDim2.new(1, -96, 1, 0)
+			TextContainer.Position = icon and UDim2.new(0, IsMobile and 40 or 62, 0, 0) or UDim2.new(0, IsMobile and 12 or 14, 0, 0)
+			TextContainer.Size = icon and UDim2.new(1, IsMobile and -104 or -146, 1, 0) or UDim2.new(1, IsMobile and -76 or -96, 1, 0)
 			TextContainer.Parent = ToggleFrame
 			local TextListLayout = Instance.new("UIListLayout")
 			TextListLayout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -2980,20 +2986,20 @@ function Astral:MakeWindow(config)
 			local TitleLabel = Instance.new("TextLabel")
 			TitleLabel.Name = "Title"
 			TitleLabel.BackgroundTransparency = 1
-			TitleLabel.Size = UDim2.new(1, 0, 0, 16)
+			TitleLabel.Size = UDim2.new(1, 0, 0, IsMobile and 28 or 16)
 			TitleLabel.Font = Enum.Font.GothamBold
 			tr(TitleLabel, title)
 			TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 			regText(TitleLabel, 11)
 			TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-			TitleLabel.TextWrapped = false
-			TitleLabel.TextTruncate = Enum.TextTruncate.AtEnd
+			TitleLabel.TextWrapped = IsMobile
+			TitleLabel.TextTruncate = IsMobile and Enum.TextTruncate.None or Enum.TextTruncate.AtEnd
 			TitleLabel.Parent = TextContainer
 			if hasDesc then
 				local DescLabel = Instance.new("TextLabel")
 				DescLabel.Name = "Description"
 				DescLabel.BackgroundTransparency = 1
-				DescLabel.Size = UDim2.new(1, 0, 0, 24)
+				DescLabel.Size = UDim2.new(1, 0, 0, IsMobile and 36 or 24)
 				DescLabel.Font = Enum.Font.Gotham
 				tr(DescLabel, description)
 				DescLabel.TextColor3 = Color3.fromRGB(160, 160, 165)
@@ -3007,8 +3013,8 @@ function Astral:MakeWindow(config)
 			SwitchTrack.Name = "SwitchTrack"
 			SwitchTrack.BackgroundColor3 = default and AccentColor or Color3.fromRGB(45, 45, 50)
 			SwitchTrack.BorderSizePixel = 0
-			SwitchTrack.Position = UDim2.new(1, -80, 0.5, -16)
-			SwitchTrack.Size = UDim2.new(0, 68, 0, 32)
+			SwitchTrack.Position = UDim2.new(1, -switchTrackWidth - 10, 0.5, -switchTrackHeight / 2)
+			SwitchTrack.Size = UDim2.new(0, switchTrackWidth, 0, switchTrackHeight)
 			SwitchTrack.Parent = ToggleFrame
 			local TrackCorner = Instance.new("UICorner")
 			TrackCorner.CornerRadius = UDim.new(0, 8)
@@ -3023,8 +3029,8 @@ function Astral:MakeWindow(config)
 			SwitchThumb.Name = "SwitchThumb"
 			SwitchThumb.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 			SwitchThumb.BorderSizePixel = 0
-			SwitchThumb.Position = default and UDim2.new(1, -31, 0.5, -14) or UDim2.new(0, 3, 0.5, -14)
-			SwitchThumb.Size = UDim2.new(0, 28, 0, 28)
+			SwitchThumb.Position = default and switchThumbOnPosition or switchThumbOffPosition
+			SwitchThumb.Size = UDim2.new(0, switchThumbSize, 0, switchThumbSize)
 			SwitchThumb.Parent = SwitchTrack
 			local ThumbCorner = Instance.new("UICorner")
 			ThumbCorner.CornerRadius = UDim.new(0, 6)
@@ -3033,7 +3039,7 @@ function Astral:MakeWindow(config)
 			local function toggle(state)
 				if state == nil then enabled = not enabled else enabled = state end
 				local targetTrackColor = enabled and AccentColor or Color3.fromRGB(45, 45, 50)
-				local targetThumbPos = enabled and UDim2.new(1, -31, 0.5, -14) or UDim2.new(0, 3, 0.5, -14)
+				local targetThumbPos = enabled and switchThumbOnPosition or switchThumbOffPosition
 				TweenService:Create(SwitchTrack, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = targetTrackColor}):Play()
 				TweenService:Create(SwitchThumb, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = targetThumbPos}):Play()
 				task.spawn(callback, enabled)
