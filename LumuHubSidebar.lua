@@ -2507,7 +2507,6 @@ function Astral:MakeWindow(config)
 			-- window width so columns never collapse to zero and hide content.
 			local w = PageScroll.AbsoluteSize.X
 			if w < 10 then w = refW end
-			if IsMobile then return true end
 			return w < 380
 		end
 		local function GetTargetColumn()
