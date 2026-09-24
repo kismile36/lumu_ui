@@ -534,7 +534,7 @@ end
 -- THEMES: Dark (default build) / Light / Midnight.
 -- Window:SetTheme(name) recolors every surface + text by value.
 -- Anything currently bound to the accent color is left untouched.
--- Index: 1 = Light, 2 = Midnight (0 = Dark = the source keys themselves).
+-- Index: 0 = Dark(源色), 1..9 = 预设列, -1 = Custom, 小于 -1 = 追加配色.
 -- ============================================================================
 local THEME_SWAP = {
 	["100,100,105"] = { "118,130,163", "150,140,175", "165,145,145", "145,165,145", "140,165,180", "170,155,140", "170,150,165", "150,160,185", "165,150,130" },
@@ -570,6 +570,20 @@ local THEME_SWAP = {
 	["70,70,80"] = { "55,70,105", "85,60,130", "115,58,60", "52,108,56", "46,106,118", "122,82,44", "128,58,96", "99,114,141", "107,78,52" },	["33,33,39"] = { "12,16,29", "22,14,34", "32,15,17", "13,30,15", "11,29,33", "34,23,12", "34,15,25", "25,29,39", "28,20,14" },
 }
 local THEME_INDEX = { Dark = 0, Midnight = 1, Purple = 2, Crimson = 3, Forest = 4, Ocean = 5, Sunset = 6, Rose = 7, Slate = 8, Coffee = 9, Custom = -1 }
+-- 追加配色: 以某个预设为基础混入明/暗主色调, 不必逐色键写值
+local EXTRA_THEME_LIST = {
+	{ Name = "Neon",  Base = "Midnight", Amount = 0.40, Dark = Color3.fromRGB(60, 28, 100),  Light = Color3.fromRGB(228, 216, 255) },
+	{ Name = "Ice",   Base = "Slate",    Amount = 0.40, Dark = Color3.fromRGB(26, 60, 105),  Light = Color3.fromRGB(214, 232, 255) },
+	{ Name = "Gold",  Base = "Coffee",   Amount = 0.40, Dark = Color3.fromRGB(92, 62, 22),   Light = Color3.fromRGB(255, 236, 205) },
+	{ Name = "Toxic", Base = "Forest",   Amount = 0.42, Dark = Color3.fromRGB(28, 82, 46),   Light = Color3.fromRGB(216, 255, 224) },
+}
+local EXTRA_THEME_BY_INDEX = {}
+for i, def in ipairs(EXTRA_THEME_LIST) do
+	local idx = -2 - i -- 负索引避开 Custom(-1), 每套各不相同才能互相切换
+	def.Index = idx
+	THEME_INDEX[def.Name] = idx
+	EXTRA_THEME_BY_INDEX[idx] = def
+end
 local CustomThemeValues = nil -- darkKey -> "r,g,b" string, built by SetCustomTheme
 local CurrentThemeName = "Dark"
 
@@ -585,6 +599,25 @@ local function themeKeyOf(c)
 	return math.floor(c.R * 255 + 0.5) .. "," .. math.floor(c.G * 255 + 0.5) .. "," .. math.floor(c.B * 255 + 0.5)
 end
 
+-- 某主题在某色键上的值: 0 = Dark 原值, 1..9 = 预设列, -1 = Custom, 小于 -1 = 追加配色(按明暗混色)
+local function themeValueFor(srcKey, idx)
+	if idx == 0 then return parseThemeRGB(srcKey) end
+	if idx == -1 then
+		if CustomThemeValues and CustomThemeValues[srcKey] then return parseThemeRGB(CustomThemeValues[srcKey]) end
+		return parseThemeRGB(srcKey)
+	end
+	local extra = EXTRA_THEME_BY_INDEX[idx]
+	if extra then
+		local base = themeValueFor(srcKey, math.max(0, THEME_INDEX[extra.Base] or 0))
+		if not base then return parseThemeRGB(srcKey) end
+		local lum = base.R * 0.3 + base.G * 0.59 + base.B * 0.11
+		return base:Lerp(lum > 0.5 and extra.Light or extra.Dark, extra.Amount)
+	end
+	local pair = THEME_SWAP[srcKey]
+	if not pair then return nil end
+	return parseThemeRGB(pair[idx])
+end
+
 -- File-scope theme applier (kept out of MakeWindow to respect the 200-local limit).
 -- Returns the new theme name on success, nil on failure.
 local function applyThemeToGui(screenGui, accentColor, fromName, toName)
@@ -594,14 +627,7 @@ local function applyThemeToGui(screenGui, accentColor, fromName, toName)
 	if target == current then return toName end
 
 	local function valFor(srcKey, idx)
-		if idx == 0 then return parseThemeRGB(srcKey) end
-		if idx == -1 then
-			if CustomThemeValues and CustomThemeValues[srcKey] then return parseThemeRGB(CustomThemeValues[srcKey]) end
-			return parseThemeRGB(srcKey)
-		end
-		local pair = THEME_SWAP[srcKey]
-		if not pair then return nil end
-		return parseThemeRGB(pair[idx])
+		return themeValueFor(srcKey, idx)
 	end
 
 	local remap = {}
@@ -645,16 +671,8 @@ end
 local function themeColorFor(darkKey, t)
 	if t == "Dark" or not t then return parseThemeRGB(darkKey) end
 	local idx = THEME_INDEX[t]
-	if idx == -1 then
-		if CustomThemeValues and CustomThemeValues[darkKey] then
-			return parseThemeRGB(CustomThemeValues[darkKey])
-		end
-		return parseThemeRGB(darkKey)
-	end
 	if not idx or idx == 0 then return parseThemeRGB(darkKey) end
-	local pair = THEME_SWAP[darkKey]
-	if not pair then return parseThemeRGB(darkKey) end
-	return parseThemeRGB(pair[idx])
+	return themeValueFor(darkKey, idx) or parseThemeRGB(darkKey)
 end
 
 local function themeCardBG(t) return themeColorFor("26,26,30", t) end
@@ -2198,8 +2216,10 @@ function Astral:MakeWindow(config)
 			else
 				tab.Gradient.Enabled = false
 
+				-- 走主题助手, 免得切换主 tab 时把深色写回去盖掉当前配色
+				local idleText = themeColorFor("180,180,185", Window.ThemeName or "Dark")
 				TweenService:Create(tab.Button, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-					BackgroundColor3 = Color3.fromRGB(26, 26, 30),
+					BackgroundColor3 = themeCardBG(Window.ThemeName or "Dark"),
 					BackgroundTransparency = 0
 				}):Play()
 				TweenService:Create(tab.Stroke, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
@@ -2207,13 +2227,13 @@ function Astral:MakeWindow(config)
 					Transparency = 0
 				}):Play()
 				TweenService:Create(tab.ButtonText, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-					TextColor3 = Color3.fromRGB(180, 180, 185)
+					TextColor3 = idleText
 				}):Play()
 				if tab.IconLabel then
-					TweenService:Create(tab.IconLabel, TweenInfo.new(0.2), {ImageColor3 = Color3.fromRGB(180, 180, 185)}):Play()
+					TweenService:Create(tab.IconLabel, TweenInfo.new(0.2), {ImageColor3 = idleText}):Play()
 				end
 				if tab.FallbackLabel then
-					TweenService:Create(tab.FallbackLabel, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(180, 180, 185)}):Play()
+					TweenService:Create(tab.FallbackLabel, TweenInfo.new(0.2), {TextColor3 = idleText}):Play()
 				end
 			end
 		end
@@ -5833,6 +5853,14 @@ function Astral:MakeWindow(config)
 
 			local stData = {Button = StBtn, BStroke = StBtnStroke, BText = StBtnText, Index = stIdx}
 			table.insert(subTabs, stData)
+
+			-- 换强调色时同步刷新选中的 sub-tab, 免得它停在旧颜色
+			onAccentChange(function(c)
+				if currentSubTab == stIdx then
+					StBtn.BackgroundColor3 = c
+					StBtnStroke.Color = c
+				end
+			end)
 
 			StBtn.MouseEnter:Connect(function()
 				if currentSubTab ~= stIdx then
